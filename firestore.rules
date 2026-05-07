@@ -1,0 +1,152 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 3. Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasRole(role) {
+      return isSignedIn() && getUserData().role == role;
+    }
+
+    function isAdmin() {
+      return hasRole('admin');
+    }
+
+    function isTeacher() {
+      return hasRole('teacher');
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // --- Entity Validations ---
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['name', 'email', 'role']) &&
+             data.keys().size() >= 3 && data.keys().size() <= 10 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.email is string && data.email.size() <= 100 &&
+             data.role in ['admin', 'teacher', 'student'];
+    }
+
+    function isValidResult(data) {
+      return data.keys().hasAll(['studentId', 'term', 'year', 'createdAt', 'updatedAt', 'teacherId', 'teacherName', 'studentName', 'grades', 'average', 'remarks']) &&
+             data.keys().size() >= 11 &&
+             data.studentId is string && isValidId(data.studentId) &&
+             data.teacherId is string && isValidId(data.teacherId) &&
+             data.term is string && data.term.size() <= 20 &&
+             data.year is string && data.year.size() == 4 &&
+             data.createdAt == request.time &&
+             data.updatedAt == request.time;
+    }
+
+    function isValidPayment(data) {
+      return data.keys().hasAll(['studentId', 'amount', 'status', 'createdAt', 'updatedAt']) &&
+             data.keys().size() >= 5 &&
+             data.amount is number && data.amount >= 0 &&
+             data.status in ['paid', 'pending', 'overdue'] &&
+             data.studentId is string && isValidId(data.studentId) &&
+             data.createdAt == request.time &&
+             data.updatedAt == request.time;
+    }
+
+    function isValidAnnouncement(data) {
+      return data.keys().hasAll(['title', 'content', 'date']) &&
+             data.title is string && data.title.size() <= 200 &&
+             data.content is string && data.content.size() <= 5000;
+    }
+
+    function isValidAssignment(data) {
+      return data.keys().hasAll(['teacherId', 'subjects']) &&
+             data.teacherId is string && isValidId(data.teacherId) &&
+             data.subjects is list && data.subjects.size() <= 20 &&
+             (!data.keys().hasAny(['updatedAt']) || data.updatedAt == request.time);
+    }
+
+    // --- Collection Rules ---
+
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin() || isTeacher();
+      allow create: if (isAdmin() || isOwner(userId)) && isValidUser(incoming()) && (
+        // Prevent self-elevation
+        (isOwner(userId) ? incoming().role == 'student' : true)
+      );
+      allow update: if (isAdmin() || isOwner(userId)) && isValidUser(incoming()) && (
+        isAdmin() || (
+          isOwner(userId) && 
+          incoming().role == existing().role && // Cannot change role
+          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'avatarUrl'])
+        )
+      );
+    }
+
+    match /results/{resultId} {
+      allow get: if isSignedIn() && (isAdmin() || isTeacher() || isOwner(existing().studentId));
+      allow list: if isSignedIn() && (
+        isAdmin() || isTeacher() || (resource.data.studentId == request.auth.uid)
+      );
+      allow create: if (isAdmin() || isTeacher()) && isValidResult(incoming()) &&
+                   (isTeacher() ? incoming().teacherId == request.auth.uid : true) &&
+                   exists(/databases/$(database)/documents/users/$(incoming().studentId));
+      allow update: if (isAdmin() || isTeacher()) && isValidResult(incoming()) &&
+                   incoming().studentId == existing().studentId &&
+                   (isTeacher() ? incoming().teacherId == existing().teacherId : true) &&
+                   incoming().updatedAt == request.time &&
+                   incoming().createdAt == existing().createdAt;
+      allow delete: if isAdmin();
+    }
+
+    match /payments/{paymentId} {
+      allow get: if isSignedIn() && (isAdmin() || isOwner(existing().studentId));
+      allow list: if isSignedIn() && (
+        isAdmin() || (resource.data.studentId == request.auth.uid)
+      );
+      allow create: if (isAdmin() || isOwner(incoming().studentId)) && isValidPayment(incoming()) &&
+                   exists(/databases/$(database)/documents/users/$(incoming().studentId));
+      allow update: if isAdmin() && isValidPayment(incoming()) &&
+                   incoming().studentId == existing().studentId &&
+                   incoming().updatedAt == request.time &&
+                   incoming().createdAt == existing().createdAt;
+      allow delete: if isAdmin();
+    }
+
+    match /announcements/{announcementId} {
+      allow read: if true;
+      allow create: if (isAdmin() || isTeacher()) && isValidAnnouncement(incoming());
+      allow update: if (isAdmin() || isTeacher()) && isValidAnnouncement(incoming());
+      allow delete: if isAdmin();
+    }
+
+    match /teacherAssignments/{assignmentId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin() && isValidAssignment(incoming());
+      allow update: if isAdmin() && isValidAssignment(incoming());
+      allow delete: if isAdmin();
+    }
+  }
+}

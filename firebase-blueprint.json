@@ -1,0 +1,106 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile for students, teachers, and admins",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["admin", "teacher", "student"] },
+        "studentId": { "type": "string" },
+        "className": { "type": "string" },
+        "phone": { "type": "string" },
+        "avatarUrl": { "type": "string" }
+      },
+      "required": ["name", "email", "role"]
+    },
+    "Result": {
+      "title": "Result",
+      "description": "Academic performance records for students",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "teacherId": { "type": "string" },
+        "teacherName": { "type": "string" },
+        "term": { "type": "string" },
+        "year": { "type": "string" },
+        "grades": {
+          "type": "object",
+          "description": "Map of subject IDs to grade scores"
+        },
+        "totalScore": { "type": "number" },
+        "average": { "type": "number" },
+        "remarks": { "type": "string" }
+      },
+      "required": ["studentId", "term", "year"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "Fee payment records",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "amount": { "type": "number" },
+        "currency": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["paid", "pending", "overdue"] },
+        "description": { "type": "string" },
+        "paymentMethod": { "type": "string" }
+      },
+      "required": ["studentId", "amount", "status"]
+    },
+    "Announcement": {
+      "title": "Announcement",
+      "description": "General school announcements",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "category": { "type": "string", "enum": ["academic", "event", "holiday", "general"] },
+        "date": { "type": "string", "format": "date-time" },
+        "author": { "type": "string" }
+      },
+      "required": ["title", "content", "date"]
+    },
+    "Assignment": {
+      "title": "Teacher Subject Assignment",
+      "description": "Mapping of teachers to the subjects they are authorized to teach",
+      "type": "object",
+      "properties": {
+        "teacherId": { "type": "string" },
+        "teacherName": { "type": "string" },
+        "subjects": { 
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["teacherId", "subjects"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/results/{resultId}": {
+      "schema": "Result",
+      "description": "Academic results"
+    },
+    "/payments/{paymentId}": {
+      "schema": "Payment",
+      "description": "Financial records"
+    },
+    "/announcements/{announcementId}": {
+      "schema": "Announcement",
+      "description": "Public and internal notices"
+    },
+    "/teacherAssignments/{assignmentId}": {
+      "schema": "Assignment",
+      "description": "Teacher subject assignments"
+    }
+  }
+}
