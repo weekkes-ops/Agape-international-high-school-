@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { 
   Users, 
@@ -49,6 +49,27 @@ export default function AdminDashboard() {
     { id: 't4', name: 'James Wilson', subjects: ['Economics', 'Government'], department: 'Social Science', load: '8 hrs/wk' },
   ]);
 
+  const [assignmentsFromDB, setAssignmentsFromDB] = useState<Record<string, string[]>>({});
+
+  useEffect(() => {
+    const fetchDBAssignments = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'teacherAssignments'));
+        const mapped: Record<string, string[]> = {};
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          if (data.teacherId) {
+            mapped[data.teacherId] = data.subjects || [];
+          }
+        });
+        setAssignmentsFromDB(mapped);
+      } catch (err) {
+        console.error("Error fetching assignments:", err);
+      }
+    };
+    fetchDBAssignments();
+  }, []);
+
   const filteredUsers = activeUsers.filter(user => 
     user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -85,7 +106,7 @@ export default function AdminDashboard() {
       if (docSnap.exists()) {
         setAssignedSubjects(docSnap.data().subjects || []);
       } else {
-        setAssignedSubjects([]);
+        setAssignedSubjects(assignmentsFromDB[teacher.id] || teacher.subjects || []);
       }
     } catch (err) {
       console.error("Error fetching assignments:", err);
@@ -104,6 +125,10 @@ export default function AdminDashboard() {
         subjects: assignedSubjects,
         updatedAt: serverTimestamp()
       });
+      setAssignmentsFromDB(prev => ({
+        ...prev,
+        [selectedTeacher.id]: assignedSubjects
+      }));
       setIsAssignModalOpen(false);
       alert("Assignments updated successfully!");
     } catch (err) {
@@ -279,33 +304,38 @@ export default function AdminDashboard() {
                        </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                       {facultyAssignments.map((faculty) => (
-                         <tr key={faculty.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="px-4 py-5 font-bold text-gray-800">{faculty.name}</td>
-                            <td className="px-4 py-5">
-                               <span className="text-[10px] font-bold px-2 py-1 bg-slate-100 text-gray-500 rounded-md uppercase">
-                                  {faculty.department}
-                               </span>
-                            </td>
-                            <td className="px-4 py-5">
-                               <div className="flex flex-wrap gap-1">
-                                  {faculty.subjects.map(s => (
-                                    <span key={s} className="text-[10px] bg-blue-50 text-brand-primary px-2 py-0.5 rounded-md font-medium border border-blue-100">
-                                      {s}
-                                    </span>
-                                  ))}
-                               </div>
-                            </td>
-                            <td className="px-4 py-5 text-right font-medium text-gray-600">
-                               <button 
-                                 onClick={() => handleOpenAssignModal(faculty)}
-                                 className="text-brand-accent hover:text-brand-primary p-2 rounded-lg hover:bg-slate-100 transition-all"
-                               >
-                                  <Edit size={16} />
-                               </button>
-                            </td>
-                         </tr>
-                       ))}
+                       {facultyAssignments.map((faculty) => {
+                         const subjectsList = assignmentsFromDB[faculty.id] !== undefined 
+                           ? assignmentsFromDB[faculty.id] 
+                           : faculty.subjects;
+                         return (
+                           <tr key={faculty.id} className="hover:bg-slate-50/50 transition-colors">
+                              <td className="px-4 py-5 font-bold text-gray-800">{faculty.name}</td>
+                              <td className="px-4 py-5">
+                                 <span className="text-[10px] font-bold px-2 py-1 bg-slate-100 text-gray-500 rounded-md uppercase">
+                                    {faculty.department}
+                                 </span>
+                              </td>
+                              <td className="px-4 py-5">
+                                 <div className="flex flex-wrap gap-1">
+                                    {subjectsList.map(s => (
+                                      <span key={s} className="text-[10px] bg-blue-50 text-brand-primary px-2 py-0.5 rounded-md font-medium border border-blue-100">
+                                        {s}
+                                      </span>
+                                    ))}
+                                 </div>
+                              </td>
+                              <td className="px-4 py-5 text-right font-medium text-gray-600">
+                                 <button 
+                                   onClick={() => handleOpenAssignModal(faculty)}
+                                   className="text-brand-accent hover:text-brand-primary p-2 rounded-lg hover:bg-slate-100 transition-all"
+                                 >
+                                    <Edit size={16} />
+                                 </button>
+                              </td>
+                           </tr>
+                         );
+                       })}
                     </tbody>
                  </table>
               </div>

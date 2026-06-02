@@ -1,4 +1,4 @@
-# Security Specification - Agape International High School
+# Security Specification - Agape Experemental High School
 
 ## Data Invariants
 1. A **User** profile can only be created by the user themselves (on first login) or an admin. Users cannot change their own roles.

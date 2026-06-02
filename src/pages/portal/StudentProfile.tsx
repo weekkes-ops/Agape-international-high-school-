@@ -40,7 +40,7 @@ interface StudentData {
 export default function StudentProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAdmin, isTeacher } = useAuth();
+  const { user, userData, isAdmin, isTeacher } = useAuth();
   
   const [student, setStudent] = useState<StudentData | null>(null);
   const [results, setResults] = useState<any[]>([]);
@@ -48,7 +48,14 @@ export default function StudentProfile() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!id || (!isAdmin && !isTeacher)) return;
+    if (!id) return;
+
+    // Check if the current user is accessing their own student profile page
+    const isSelf = user?.uid === id;
+    if (!isAdmin && !isTeacher && !isSelf) {
+      setLoading(false);
+      return;
+    }
 
     const fetchStudentFullData = async () => {
       try {
@@ -59,14 +66,38 @@ export default function StudentProfile() {
         }
 
         // 2. Fetch Results
-        const resultsQ = query(collection(db, 'results'), where('studentId', '==', id), orderBy('year', 'desc'));
+        const resultsQ = query(collection(db, 'results'), where('studentId', '==', id));
         const resultsSnap = await getDocs(resultsQ);
-        setResults(resultsSnap.docs.map(d => d.data()));
+        const fetchedResults = resultsSnap.docs.map(d => d.data());
+
+        // Sort client-side to prevent missing index exceptions in Firestore
+        fetchedResults.sort((a, b) => {
+          const yearA = parseInt(a.year) || 0;
+          const yearB = parseInt(b.year) || 0;
+          if (yearB !== yearA) {
+            return yearB - yearA;
+          }
+          const termOrder: Record<string, number> = { 'First': 1, 'Second': 2, 'Third': 3 };
+          const termA = termOrder[a.term] || 0;
+          const termB = termOrder[b.term] || 0;
+          return termB - termA;
+        });
+        setResults(fetchedResults);
 
         // 3. Fetch Payments
-        const paymentsQ = query(collection(db, 'payments'), where('studentId', '==', id), orderBy('date', 'desc'));
+        const paymentsQ = query(collection(db, 'payments'), where('studentId', '==', id));
         const paymentsSnap = await getDocs(paymentsQ);
-        setPayments(paymentsSnap.docs.map(d => d.data()));
+        const fetchedPayments = paymentsSnap.docs.map(d => d.data());
+
+        // Sort client-side to prevent missing index exceptions in Firestore
+        fetchedPayments.sort((a, b) => {
+          const rawA = a.date;
+          const rawB = b.date;
+          const tA = rawA?.toMillis ? rawA.toMillis() : (rawA?.seconds ? rawA.seconds * 1000 : 0);
+          const tB = rawB?.toMillis ? rawB.toMillis() : (rawB?.seconds ? rawB.seconds * 1000 : 0);
+          return tB - tA;
+        });
+        setPayments(fetchedPayments);
 
       } catch (err) {
         console.error("Error fetching student records:", err);
@@ -76,7 +107,7 @@ export default function StudentProfile() {
     };
 
     fetchStudentFullData();
-  }, [id, isAdmin, isTeacher]);
+  }, [id, user, isAdmin, isTeacher]);
 
   if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary"></div></div>;
   if (!student) return <div className="p-8 bg-white rounded-3xl text-center">Student record not found.</div>;

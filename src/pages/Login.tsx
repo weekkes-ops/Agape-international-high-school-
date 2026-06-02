@@ -97,7 +97,7 @@ export default function Login() {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-10">
-          By signing in, you agree to Agape International's <br />
+          By signing in, you agree to Agape Experemental's <br />
           <a href="#" className="underline hover:text-brand-primary transition-colors">Privacy Policy</a> and <a href="#" className="underline hover:text-brand-primary transition-colors">Terms of Service</a>
         </p>
       </motion.div>

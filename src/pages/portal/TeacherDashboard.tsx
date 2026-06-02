@@ -242,7 +242,7 @@ export default function TeacherDashboard() {
               </h3>
               <div className="space-y-4">
                  {[
-                   { id: ' student_1', name: 'John Doe', class: 'SS3 Gold', status: '82%' },
+                   { id: 'student_1', name: 'John Doe', class: 'SS3 Gold', status: '82%' },
                    { id: 'student_2', name: 'Michael Chen', class: 'SS3 Gold', status: '75%' },
                    { id: 'student_3', name: 'Sarah Wilson', class: 'SS3 Gold', status: '91%' },
                  ].map((std, i) => (

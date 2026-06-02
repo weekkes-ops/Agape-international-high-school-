@@ -21,7 +21,7 @@ export default function Navbar() {
             A
           </div>
           <div className="hidden sm:block">
-            <h1 className="text-xl font-bold text-brand-primary leading-tight uppercase tracking-tighter">Agape International</h1>
+            <h1 className="text-xl font-bold text-brand-primary leading-tight uppercase tracking-tighter">Agape Experemental</h1>
             <p className="text-[10px] text-gray-500 uppercase tracking-[0.2em]">High School Portal</p>
           </div>
         </Link>

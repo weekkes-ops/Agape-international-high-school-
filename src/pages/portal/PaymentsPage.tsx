@@ -33,14 +33,28 @@ export default function PaymentsPage() {
     try {
       const q = query(
         collection(db, 'payments'),
-        where('studentId', '==', user.uid),
-        orderBy('date', 'desc')
+        where('studentId', '==', user.uid)
       );
       const querySnapshot = await getDocs(q);
-      setPayments(querySnapshot.docs.map(doc => ({ 
-        id: doc.id, 
-        ...doc.data(),
-        date: doc.data().date?.toDate ? doc.data().date.toDate().toLocaleDateString() : 'Just now'
+      const fetchedPayments = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          rawDate: data.date
+        };
+      });
+
+      // Sort client-side to be resilient against missing index setups in Firestore
+      fetchedPayments.sort((a, b) => {
+        const dateA = a.rawDate?.toMillis ? a.rawDate.toMillis() : (a.rawDate?.seconds ? a.rawDate.seconds * 1000 : 0);
+        const dateB = b.rawDate?.toMillis ? b.rawDate.toMillis() : (b.rawDate?.seconds ? b.rawDate.seconds * 1000 : 0);
+        return dateB - dateA;
+      });
+
+      setPayments(fetchedPayments.map(p => ({
+        ...p,
+        date: p.rawDate?.toDate ? p.rawDate.toDate().toLocaleDateString() : 'Just now'
       })) as any[]);
     } catch (err) {
       handleFirestoreError(err, OperationType.LIST, 'payments');

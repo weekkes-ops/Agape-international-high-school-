@@ -10,7 +10,7 @@ export default function Footer() {
             <div className="w-10 h-10 bg-brand-secondary rounded-lg flex items-center justify-center text-brand-primary font-serif text-2xl font-bold">
               A
             </div>
-            <h1 className="text-xl font-bold font-serif">Agape International</h1>
+            <h1 className="text-xl font-bold font-serif">Agape Experemental</h1>
           </div>
           <p className="text-slate-400">
             Dedicated to raising a generation of global leaders through faith-based excellence and holistic education.
@@ -51,22 +51,22 @@ export default function Footer() {
           <ul className="space-y-4 text-slate-400">
             <li className="flex items-center gap-3">
               <MapPin size={18} className="text-brand-secondary" />
-              <span>12 Grace Valley, International Way, Lagos</span>
+              <span>Milton Magai College Junction, Freetown Sierra Leone</span>
             </li>
             <li className="flex items-center gap-3">
               <Phone size={18} className="text-brand-secondary" />
-              <span>+234 (0) 800-AGAPE-EDU</span>
+              <span>076 127779</span>
             </li>
             <li className="flex items-center gap-3">
               <Mail size={18} className="text-brand-secondary" />
-              <span>info@agapeinternational.edu.ng</span>
+              <span>info@agapeexperemental.edu.ng</span>
             </li>
           </ul>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 pt-10 border-t border-slate-800 text-center text-slate-500 text-sm">
-        <p>&copy; {new Date().getFullYear()} Agape International High School. All rights reserved. Designed for Excellence.</p>
+        <p>&copy; {new Date().getFullYear()} Agape Experemental High School. All rights reserved. Designed for Excellence.</p>
       </div>
     </footer>
   );

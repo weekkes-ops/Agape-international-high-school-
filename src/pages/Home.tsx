@@ -29,7 +29,7 @@ export default function Home() {
             transition={{ delay: 0.2 }}
             className="text-xl text-blue-100 mb-8"
           >
-            Welcome to Agape International High School. A place where character meets competence, 
+            Welcome to Agape Experemental High School. A place where character meets competence, 
             and where every student is empowered to lead and serve.
           </motion.p>
           <motion.div 
@@ -87,7 +87,7 @@ export default function Home() {
             <span className="text-brand-accent font-bold tracking-widest uppercase">Since 1995</span>
             <h2 className="text-4xl md:text-5xl font-serif text-brand-primary mt-4 mb-6">Built on Foundation of Love and Faith</h2>
             <p className="text-gray-600 text-lg mb-6">
-              Agape International High School is committed to providing a holistic education that balances academic 
+              Agape Experemental High School is committed to providing a holistic education that balances academic 
               rigor with spiritual growth and character development. Our state-of-the-art facilities and 
               dedicated faculty create an environment where students can discover their true potential.
             </p>

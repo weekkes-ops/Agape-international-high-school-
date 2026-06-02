@@ -41,18 +41,16 @@ export default function ResultsPage() {
         const resultsRef = collection(db, 'results');
 
         if (isAdmin) {
-          q = query(resultsRef, orderBy('year', 'desc'));
+          q = query(resultsRef);
         } else if (isTeacher) {
           q = query(
             resultsRef, 
-            where('teacherId', '==', user.uid),
-            orderBy('year', 'desc')
+            where('teacherId', '==', user.uid)
           );
         } else {
           q = query(
             resultsRef,
-            where('studentId', '==', user.uid),
-            orderBy('year', 'desc')
+            where('studentId', '==', user.uid)
           );
         }
 
@@ -65,6 +63,20 @@ export default function ResultsPage() {
             ...data
           } as Result;
         });
+
+        // Sort client-side to prevent missing index exceptions in Firestore
+        fetchedResults.sort((a, b) => {
+          const yearA = parseInt(a.year) || 0;
+          const yearB = parseInt(b.year) || 0;
+          if (yearB !== yearA) {
+            return yearB - yearA;
+          }
+          const termOrder: Record<string, number> = { 'First': 1, 'Second': 2, 'Third': 3 };
+          const termA = termOrder[a.term] || 0;
+          const termB = termOrder[b.term] || 0;
+          return termB - termA;
+        });
+
         setResults(fetchedResults);
       } catch (err) {
         console.error("Error fetching results:", err);
